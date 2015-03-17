@@ -19,16 +19,15 @@
 	}
 
 	function htmlentities(text) {
-		return document.createElement('div')
-			.appendChild(document.createTextNode(text))
-			.parentNode
-			.innerHTML;
+		var div = document.createElement('div');
+		div.textContent = text;
+		return div.innerHTML;
 	}
 
 	// This regexp doesn't care about mirc colors and treat them like regular chars.
 	var urlRegexp = new RegExp('(https?|ftp)://[^\\s/$.?#].[^\\s]*', 'ig');
 
-	var mircColorRegexp = new RegExp('(?:[\x02\x1f\x0f]+|\x03[0-9]{0,2}(?:,[0-9]{0,2})?)*', 'g');
+	var mircColorRegexp = new RegExp('(?:[\x02\x1f\x0f\x16]+|\x03[0-9]{0,2}(?:,[0-9]{0,2})?)*', 'g');
 	function stripMircColors(text) {
 		return text.replace(mircColorRegexp, '');
 	}
@@ -66,7 +65,7 @@
 		return '#' + ('000000' + hex).substr(-6);
 	}
 
-	function mircColorToHtml(input) {
+	function mircColorToHtml(input, options) {
 		var INITIAL_STATE = {
 			bold: false,
 			underline: false,
@@ -74,6 +73,10 @@
 			bgcolor: false,
 			link: false,
 		};
+
+		if (options === undefined) {
+			options = {};
+		}
 
 		var state = cloneDict(INITIAL_STATE);
 		var stateStack = [];
@@ -103,12 +106,11 @@
 
 				if (value) {
 					stateEn[key] = value;
-				} else {
-					if (state[key] === false) {
-						// Already disabled - we have already popped this state.
-						continue;
-					}
-
+				}
+				// We need to pop previous state if:
+				// 1) It was on and we're going to turn it off: value === false (obviously state[key] !== false in this case).
+				// 2) It was on and we're going to change its value: value !== false && state[key] !== false
+				if (state[key] !== false) {
 					for (var j = stateStack.length - 1; j >= 0; j--) {
 						var popped = stateStack.pop();
 						var origValue = state[popped];
@@ -170,9 +172,11 @@
 
 		// Search for URLs.
 		var urlIndices = {};
-		var m;
-		while ((m = urlRegexp.exec(input)) !== null) {
-			urlIndices[m.index] = m[0].length;
+		if (options.createLinks) {
+			var m;
+			while ((m = urlRegexp.exec(input)) !== null) {
+				urlIndices[m.index] = m[0].length;
+			}
 		}
 
 		// Convert the input.
