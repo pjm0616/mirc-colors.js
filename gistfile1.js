@@ -1,82 +1,39 @@
-function parseIrcColor(s) {
-	var state = {
-		bold: false,
-		underline: false,
-		color: false,
-		bgcolor: false,
-	};
-	var stateStack = [];
+// Copyright (C) 2015 Park, Jeongmin <pjm0616@gmail.com>
+// Licensed under the MIT license.
 
-	function updateStateInternal(newState) {
-		var stateEn = {};
-		var stateChangeList = [];
+(function() {
+	'use strict';
 
-		// Sanitize newState into newState2.
-		var newState2 = {};
-		var keys = Object.keys(newState);
-		for (var i = 0; i < keys.length; i++) {
-			var key = keys[i], value = newState[key], oldValue = state[key];
-
-			if (value === 'toggle') {
-				value = !oldValue;
+	function cloneDict(obj) {
+		if (typeof obj === 'object') {
+			var obj2 = {};
+			var keys = Object.keys(obj);
+			for (var i = 0; i < keys.length; i++) {
+				var key = keys[i];
+				obj2[key] = obj[key];
 			}
-			if (value === oldValue) {
-				continue;
-			}
-			newState2[key] = value;
+			return obj2;
+		} else {
+			return obj;
 		}
+	}
 
-		// Calculate stateEn and stateChangeList.
-		var keys = Object.keys(newState2);
-		for (var i = 0; i < keys.length; i++) {
-			var key = keys[i], value = newState2[key];
+	function htmlentities(text) {
+		return document.createElement('div')
+			.appendChild(document.createTextNode(text))
+			.parentNode
+			.innerHTML;
+	}
 
-			if (value) {
-				stateEn[key] = value;
-			} else {
-				for (var j = stateStack.length - 1; j >= 0; j--) {
-					var popped = stateStack.pop();
-					state[key] = false;
-					stateChangeList.push([popped, false]);
+	// This regexp doesn't care about mirc colors and treat them like regular chars.
+	var urlRegexp = new RegExp('(https?|ftp)://[^\\s/$.?#].[^\\s]*', 'ig');
 
-					if (popped === key) {
-						break;
-					} else if (newState2[popped] === undefined) {
-						// We have to reenable this state.
-						stateEn[popped] = state[popped];
-					}
-				}
-			}
-		}
+	var mircColorRegexp = new RegExp('(?:[\x02\x1f\x0f]+|\x03[0-9]{0,2}(?:,[0-9]{0,2})?)*', 'g');
+	function stripMircColors(text) {
+		return text.replace(mircColorRegexp, '');
+	}
 
-		// Update remaining state and stateChangeList.
-		var keys = Object.keys(stateEn);
-		for (var i = 0; i < keys.length; i++) {
-			var key = keys[i], value = stateEn[key];
-
-			state[key] = value;
-			stateStack.push(key);
-			stateChangeList.push([key, value]);
-		}
-
-		return stateChangeList;
-	} // END OF updateStateInternal()
-
-	var charBuf = [];
-	var result = [];
-	function updateState(newState) {
-		if (charBuf.length > 0) {
-			result.push(charBuf.join(''));
-			charBuf = [];
-		}
-
-		var changeList = updateStateInternal(newState);
-		for (var i = 0; i < changeList.length; i++) {
-			var key = changeList[i][0], value = changeList[i][1];
-			result.push(getHtmlTag(key, value));
-		}
-	} // END OF updateState()
-
+	// From: http://www.mirc.com/colors.html
 	var mircColorCodes = {
 		0: ['White', [255,255,255]],
 		1: ['Black', [0,0,0]],
@@ -106,59 +63,190 @@ function parseIrcColor(s) {
 		return '#' + ('000000' + hex).substr(-6);
 	}
 
-	function getHtmlTag(key, value) {
-		if (key === 'bold') {
-			return value ? '<strong>' : '</strong>';
-		} else if (key === 'underline') {
-			return value ? '<span style="text-decoration: underline">' : '</span>';
-		} else if (key === 'color') {
-			return (value !== false) ? '<span style="color: ' + resolveIrcColor(value) + '">' : '</span>';
-		} else if (key === 'bgcolor') {
-			return (value !== false) ? '<span style="background-color: ' + resolveIrcColor(value) + '">' : '</span>';
-		}
-	} // END OF getHtmlTag()
+	function mircColorToHtml(input) {
+		var INITIAL_STATE = {
+			bold: false,
+			underline: false,
+			color: false,
+			bgcolor: false,
+			link: false,
+		};
 
-	// Process the input.
-	for (var i = 0; i < s.length; i++) {
-		var ch = s[i];
-		if (ch === '\x02') {
-			updateState({bold: 'toggle'});
-		} else if (ch === '\x1f') {
-			updateState({underline: 'toggle'});
-		} else if (ch === '\x0f') {
-			updateState({bold: false, underline: false, color: false, bgcolor: false});
-		} else if (ch === '\x03') {
-			var j = i + 1;
-			var flag = 0;
-			while (j < s.length) {
-				if (s[j] >= '0' && s[j] <= '9' && (j - i) <= 2) {
-					j++;
+		var state = cloneDict(INITIAL_STATE);
+		var stateStack = [];
+		function updateStateInternal(newState) {
+			var stateEn = {};
+			var stateChangeList = [];
+
+			// Sanitize newState into newState2.
+			var newState2 = {};
+			var keys = Object.keys(newState);
+			for (var i = 0; i < keys.length; i++) {
+				var key = keys[i], value = newState[key], oldValue = state[key];
+
+				if (value === 'toggle') {
+					value = !oldValue;
+				}
+				if (value === oldValue) {
+					continue;
+				}
+				newState2[key] = value;
+			}
+
+			// Calculate stateEn and stateChangeList.
+			var keys = Object.keys(newState2);
+			for (var i = 0; i < keys.length; i++) {
+				var key = keys[i], value = newState2[key];
+
+				if (value) {
+					stateEn[key] = value;
 				} else {
-					if (flag === 0) {
-						if (j > i) {
-							updateState({color: parseInt(s.substring(i + 1, j))});
-							if (s[j] === ',') {
-								i = j;
-								j++;
-								flag = 1;
-								continue;
-							}
-						}
-					} else {
-						if (j > i) {
-							updateState({bgcolor: parseInt(s.substring(i + 1, j))});
+					if (state[key] === false) {
+						// Already disabled - we have already popped this state.
+						continue;
+					}
+
+					for (var j = stateStack.length - 1; j >= 0; j--) {
+						var popped = stateStack.pop();
+						var origValue = state[popped];
+						state[popped] = false;
+						stateChangeList.push([popped, false]);
+
+						if (popped === key) {
+							break;
+						} else if (newState2[popped] === undefined) {
+							// We have to reenable this state.
+							stateEn[popped] = origValue;
 						}
 					}
-					j--;
-					break;
 				}
 			}
-			i = j;
-		} else {
-			charBuf.push(s[i]);
+
+			// Update remaining state and stateChangeList.
+			var keys = Object.keys(stateEn);
+			for (var i = 0; i < keys.length; i++) {
+				var key = keys[i], value = stateEn[key];
+
+				state[key] = value;
+				stateStack.push(key);
+				stateChangeList.push([key, value]);
+			}
+
+			return stateChangeList;
+		} // END OF updateStateInternal()
+
+		var charBuf = []; // Temp string fragment buffer.
+		var result = [];
+		function updateState(newState) {
+			if (charBuf.length > 0) {
+				result.push(charBuf.join(''));
+				charBuf = [];
+			}
+
+			var changeList = updateStateInternal(newState);
+			for (var i = 0; i < changeList.length; i++) {
+				var key = changeList[i][0], value = changeList[i][1];
+				result.push(getHtmlTag(key, value));
+			}
+		} // END OF updateState()
+
+		function getHtmlTag(key, value) {
+			if (key === 'bold') {
+				return value ? '<strong>' : '</strong>';
+			} else if (key === 'underline') {
+				return value ? '<span style="text-decoration: underline">' : '</span>';
+			} else if (key === 'color') {
+				return (value !== false) ? '<span style="color: ' + resolveIrcColor(value) + '">' : '</span>';
+			} else if (key === 'bgcolor') {
+				return (value !== false) ? '<span style="background-color: ' + resolveIrcColor(value) + '">' : '</span>';
+			} else if (key === 'link') {
+				return (value !== false) ? '<a href="' + htmlentities(value) + '">' : '</a>';
+			}
+		} // END OF getHtmlTag()
+
+
+		// Search for URLs.
+		var urlIndices = {};
+		var m;
+		while ((m = urlRegexp.exec(input)) !== null) {
+			urlIndices[m.index] = m[0].length;
 		}
+
+		// Convert the input.
+		for (var i = 0; i < input.length; i++) {
+			var ch = input[i];
+			if (ch === '\x02') {
+				updateState({bold: 'toggle'});
+			} else if (ch === '\x1f') {
+				updateState({underline: 'toggle'});
+			} else if (ch === '\x0f') {
+				updateState({bold: false, underline: false, color: false, bgcolor: false});
+			} else if (ch === '\x03') {
+				var j = i + 1;
+				var flag = 0;
+				while (j < input.length) {
+					if (input[j] >= '0' && input[j] <= '9' && (j - i) <= 2) {
+						j++;
+					} else {
+						if (flag === 0) {
+							if (j > i) {
+								updateState({color: parseInt(input.substring(i + 1, j))});
+								if (input[j] === ',') {
+									i = j;
+									j++;
+									flag = 1;
+									continue;
+								}
+							}
+						} else {
+							if (j > i) {
+								updateState({bgcolor: parseInt(input.substring(i + 1, j))});
+							}
+						}
+						j--;
+						break;
+					}
+				}
+				i = j;
+			} else {
+				// Handle URLs.
+				if (state['link'] === false) {
+					var urlLength = urlIndices[i];
+					if (urlLength !== undefined) {
+						var url = stripMircColors(input.substr(i, urlLength));
+
+						var origState = cloneDict(state);
+						// Since we don't want links to be split, we put the link tag at the top.
+						// Reset the state to the initial state first.
+						updateState(INITIAL_STATE);
+						// And add the link tag.
+						updateState({link: url});
+						// And then restore the previous state, with the link.
+						origState['link'] = url;
+						updateState(origState);
+
+						var urlEndPos = i + urlLength;
+					}
+				} else {
+					if (i === urlEndPos) {
+						updateState({link: false});
+					}
+				}
+
+				// Add the character to the buffer.
+				charBuf.push(ch);
+			}
+		}
+
+		updateState({bold: false, underline: false, color: false, bgcolor: false});
+		return result.join('');
 	}
 
-	updateState({bold: false, underline: false, color: false, bgcolor: false});
-	return result.join('');
-}
+
+	if (typeof this === 'object') {
+		this.stripMircColors = stripMircColors;
+		this.mircColorToHtml = mircColorToHtml;
+		this.mircColorCodes = mircColorCodes;
+		this.resolveIrcColor = resolveIrcColor;
+	}
+}).call(this);
