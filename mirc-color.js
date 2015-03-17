@@ -51,6 +51,9 @@
 		13: ['Pink', [255,0,255]],
 		14: ['Grey', [127,127,127]],
 		15: ['Light Grey', [210,210,210]],
+		// FIXME
+		'default-fgcolor': ['default-fgcolor', [0,0,0]],
+		'default-bgcolor': ['default-bgcolor', [255,255,255]],
 	};
 	function resolveIrcColor(colorCode) {
 		var entry = mircColorCodes[colorCode];
@@ -67,7 +70,7 @@
 		var INITIAL_STATE = {
 			bold: false,
 			underline: false,
-			color: false,
+			fgcolor: false,
 			bgcolor: false,
 			link: false,
 		};
@@ -155,7 +158,7 @@
 				return value ? '<strong>' : '</strong>';
 			} else if (key === 'underline') {
 				return value ? '<span style="text-decoration: underline">' : '</span>';
-			} else if (key === 'color') {
+			} else if (key === 'fgcolor') {
 				return (value !== false) ? '<span style="color: ' + resolveIrcColor(value) + '">' : '</span>';
 			} else if (key === 'bgcolor') {
 				return (value !== false) ? '<span style="background-color: ' + resolveIrcColor(value) + '">' : '</span>';
@@ -180,7 +183,19 @@
 			} else if (ch === '\x1f') {
 				updateState({underline: 'toggle'});
 			} else if (ch === '\x0f') {
-				updateState({bold: false, underline: false, color: false, bgcolor: false});
+				updateState({bold: false, underline: false, fgcolor: false, bgcolor: false});
+			} else if (ch === '\x16') {
+				// Swap fgcolor and bgcolor.
+				// default-(bg|fg)color is a magic constant that represent the default bg/fg colors.
+				var fgcolor = state['bgcolor'] || 'default-bgcolor';
+				var bgcolor = state['fgcolor'] || 'default-fgcolor';
+				if (fgcolor === 'default-fgcolor') {
+					fgcolor = false;
+				}
+				if (bgcolor === 'default-bgcolor') {
+					bgcolor = false;
+				}
+				updateState({fgcolor: fgcolor, bgcolor: bgcolor});
 			} else if (ch === '\x03') {
 				var j = i + 1;
 				var flag = 0;
@@ -190,7 +205,7 @@
 					} else {
 						if (flag === 0) {
 							if (j > i) {
-								updateState({color: parseInt(input.substring(i + 1, j))});
+								updateState({fgcolor: parseInt(input.substring(i + 1, j))});
 								if (input[j] === ',') {
 									i = j;
 									j++;
@@ -238,7 +253,7 @@
 			}
 		}
 
-		updateState({bold: false, underline: false, color: false, bgcolor: false});
+		updateState(INITIAL_STATE);
 		return result.join('');
 	}
 
