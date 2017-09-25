@@ -144,7 +144,8 @@
 		var result = [];
 		function updateState(newState) {
 			if (charBuf.length > 0) {
-				result.push(charBuf.join(''));
+				var s = htmlentities(charBuf.join(''));
+				result.push(s);
 				charBuf = [];
 			}
 
