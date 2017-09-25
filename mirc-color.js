@@ -146,6 +146,7 @@
 			if (charBuf.length > 0) {
 				var s = htmlentities(charBuf.join(''));
 				s = s.replace(/\n/g, '<br/>');
+				s = s.replace(/ /g, '&nbsp;');
 				result.push(s);
 				charBuf = [];
 			}
