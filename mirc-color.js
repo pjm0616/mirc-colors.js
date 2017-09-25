@@ -145,6 +145,7 @@
 		function updateState(newState) {
 			if (charBuf.length > 0) {
 				var s = htmlentities(charBuf.join(''));
+				s = s.replace(/\n/g, '<br/>');
 				result.push(s);
 				charBuf = [];
 			}
