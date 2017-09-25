@@ -167,7 +167,7 @@
 			} else if (key === 'bgcolor') {
 				return (value !== false) ? '<span style="background-color: ' + resolveIrcColor(value) + '">' : '</span>';
 			} else if (key === 'link') {
-				return (value !== false) ? '<a href="' + htmlentities(value) + '">' : '</a>';
+				return (value !== false) ? '<a href="' + htmlentities(value) + '" rel="noopener" target="_blank">' : '</a>';
 			}
 		} // END OF getHtmlTag()
 
