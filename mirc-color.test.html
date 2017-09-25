@@ -1,0 +1,28 @@
+<html>
+<head>
+<meta charset="utf-8">
+</head>
+<body>
+
+<script src="mirc-color.js"></script>
+<script>
+var s = '\x02B\x1fBU\x02U';
+var s = '\x1fU\x02BU\x1fB';
+var s = 'asdf\x02bold  \x034asdfhttp://goog\x0fle.\x033com/\x02l\x035ol\x02lol    asdf\0x02asdf\x02resets here:\x0f';
+var s = '[image] test.png | 740x153 | 0.01 MB | Uploaded by test ( https://example.com/\x02image.png\x02 )';
+s += '\n[06git.example.com/13example-project] 15Park, Jeongmin pushed 2 new commits to 06master';
+s += '\nasdf\x16as\x034,6df\x16sdf';
+s += '\nBBUU http://exam13pple.co4,6m/asasdfadffqwe';
+
+var f = mircColorToHtml(s, {createLinks: true});
+document.write(f);
+
+var expected = "[image] <strong>test.png</strong> | 740x153 | 0.01 MB | Uploaded by test ( <span style=\"text-decoration: underline\"></span><a href=\"https://example.com/image.png\" rel=\"noopener\" target=\"_blank\"><span style=\"text-decoration: underline\">https://example.com/<strong>image.png</strong></span></a> )<br/>[<span style=\"color: #9c009c\">git.example.com</span>/<span style=\"color: #ff00ff\">example-project</span>] <span style=\"color: #d2d2d2\">Park, Jeongmin</span> pushed <strong>2</strong> new commits to <span style=\"color: #9c009c\">master</span><br/>asdf<span style=\"color: #ffffff\"><span style=\"background-color: #000000\">as</span></span><span style=\"color: #ff0000\"><span style=\"background-color: #000000\"></span><span style=\"background-color: #9c009c\">df</span></span><span style=\"color: #9c009c\"><span style=\"background-color: #ff0000\">sdf<br/><strong>B<span style=\"text-decoration: underline\">BU</span></strong><span style=\"text-decoration: underline\">U </span></span></span><a href=\"http://exampple.com/asasdfadffqwe\" rel=\"noopener\" target=\"_blank\"><span style=\"text-decoration: underline\"><span style=\"color: #9c009c\"><span style=\"background-color: #ff0000\">http://ex<strong>am</strong></span></span><span style=\"color: #ff00ff\"><strong><span style=\"background-color: #ff0000\">p</span></strong><span style=\"background-color: #ff0000\">ple.c</span></span><span style=\"color: #ff0000\"><span style=\"background-color: #ff00ff\">o</span><span style=\"background-color: #9c009c\">m/as</span></span><span style=\"color: #9c009c\"><span style=\"background-color: #ff0000\">asdfadff</span></span></span>qwe</a>";
+console.log(JSON.stringify(f));
+if (f !== expected) {
+    alert('formatted text doesn\'t match');
+}
+</script>
+
+</body>
+</html>
