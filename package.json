@@ -1,0 +1,19 @@
+{
+  "name": "mirc-colors.js",
+  "version": "1.0.0",
+  "description": "",
+  "main": "mirc-colors.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pjm0616/mirc-colors.js.git"
+  },
+  "author": "Park, Jeongmin <pjm0616@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/pjm0616/mirc-colors.js/issues"
+  },
+  "homepage": "https://github.com/pjm0616/mirc-colors.js#readme"
+}
