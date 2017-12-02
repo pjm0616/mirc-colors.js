@@ -69,6 +69,7 @@
 		var INITIAL_STATE = {
 			bold: false,
 			underline: false,
+			italic: false,
 			fgcolor: false,
 			bgcolor: false,
 			link: false,
@@ -163,6 +164,8 @@
 				return value ? '<strong>' : '</strong>';
 			} else if (key === 'underline') {
 				return value ? '<span style="text-decoration: underline">' : '</span>';
+			} else if (key === 'italic') {
+				return value ? '<span style="font-style: italic">' : '</span>';
 			} else if (key === 'fgcolor') {
 				return (value !== false) ? '<span style="color: ' + resolveIrcColor(value) + '">' : '</span>';
 			} else if (key === 'bgcolor') {
@@ -189,8 +192,10 @@
 				updateState({bold: 'toggle'});
 			} else if (ch === '\x1f') {
 				updateState({underline: 'toggle'});
+			} else if (ch === '\x1d') {
+				updateState({italic: 'toggle'});
 			} else if (ch === '\x0f') {
-				updateState({bold: false, underline: false, fgcolor: false, bgcolor: false});
+				updateState({bold: false, underline: false, italic: false, fgcolor: false, bgcolor: false});
 			} else if (ch === '\x16') {
 				// Swap fgcolor and bgcolor.
 				// default-(bg|fg)color is a magic constant that represent the default bg/fg colors.
